@@ -1,0 +1,21 @@
+target/
+data/
+
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Java/Maven
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*

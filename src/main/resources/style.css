@@ -1,0 +1,235 @@
+/* ====== Genel ====== */
+.root {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #F0F2F5;
+}
+
+/* ====== TableView ====== */
+.table-view {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 10, 0, 0, 3);
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #F8F9FA;
+    -fx-background-radius: 10 10 0 0;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #E9ECEF transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 10 12 10 12;
+}
+
+.table-view .column-header .label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #6C757D;
+    -fx-font-size: 11px;
+    -fx-letter-spacing: 0.5;
+}
+
+.table-row-cell {
+    -fx-border-color: transparent transparent #F1F3F4 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-background-color: white;
+    -fx-padding: 2 0 2 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #FAFBFC;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #FEF0EE;
+}
+
+.table-row-cell:selected .text {
+    -fx-fill: #1A252F;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #FFF5F4;
+}
+
+.table-view .table-cell {
+    -fx-padding: 8 12 8 12;
+    -fx-text-fill: #2C3E50;
+}
+
+.table-view:focused {
+    -fx-border-color: transparent;
+}
+
+/* Sütun sıralaması oku */
+.table-view .arrow {
+    -fx-background-color: #C0392B;
+}
+
+/* ====== ScrollBar ====== */
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical .thumb,
+.scroll-bar:horizontal .thumb {
+    -fx-background-color: #CED4DA;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar:vertical .thumb:hover,
+.scroll-bar:horizontal .thumb:hover {
+    -fx-background-color: #C0392B;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* ====== ComboBox ====== */
+.combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #DEE2E6;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 2 4 2 4;
+}
+
+.combo-box:focused {
+    -fx-border-color: #C0392B;
+}
+
+.combo-box .list-cell {
+    -fx-padding: 6 12 6 12;
+    -fx-text-fill: #2C3E50;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-border-color: #DEE2E6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 4);
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #FEF0EE;
+}
+
+/* ====== TextField ====== */
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #DEE2E6;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12 8 12;
+}
+
+.text-field:focused {
+    -fx-border-color: #C0392B;
+    -fx-effect: dropshadow(gaussian, rgba(192,57,43,0.15), 6, 0, 0, 0);
+}
+
+/* ====== DatePicker ====== */
+.date-picker {
+    -fx-background-color: white;
+    -fx-border-color: #DEE2E6;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.date-picker:focused {
+    -fx-border-color: #C0392B;
+}
+
+.date-picker-popup {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.14), 14, 0, 0, 4);
+}
+
+/* ====== Dialog ====== */
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #F8F9FA;
+    -fx-background-radius: 10 10 0 0;
+}
+
+.dialog-pane .button-bar .button {
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+/* ====== Separator ====== */
+.separator .line {
+    -fx-border-color: #E9ECEF;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ====== Spinner ====== */
+.spinner {
+    -fx-background-color: white;
+    -fx-border-color: #DEE2E6;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: #F8F9FA;
+}
+
+/* ====== ToggleButton (filtre hapları) ====== */
+.toggle-button {
+    -fx-cursor: hand;
+}
+
+/* ====== Grafik ====== */
+.chart-bar {
+    -fx-bar-fill: #C0392B;
+}
+
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.chart-horizontal-grid-lines {
+    -fx-stroke: #F1F3F4;
+}
+
+.chart-vertical-grid-lines {
+    -fx-stroke: transparent;
+}
+
+.axis-label {
+    -fx-text-fill: #6C757D;
+    -fx-font-size: 11px;
+}
+
+.axis {
+    -fx-tick-label-fill: #6C757D;
+}
+
+/* ====== Label ====== */
+.label {
+    -fx-text-fill: #2C3E50;
+}
