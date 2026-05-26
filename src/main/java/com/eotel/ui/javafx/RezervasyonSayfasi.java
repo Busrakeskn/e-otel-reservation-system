@@ -135,6 +135,10 @@ public class RezervasyonSayfasi extends BorderPane {
         TableColumn<Reservation, String> tutarKol = sutun("Tutar", 100,
                 r -> String.format("%.0f₺", r.getToplamTutar()));
 
+        TableColumn<Reservation, String> odemeKol = sutun("Ödeme", 110,
+                r -> r.getOdemeDurumu().getLabel() + " ("
+                        + String.format("%.0f", r.getOdenenTutar()) + "₺)");
+
         // Durum rozeti
         durumKol.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -148,6 +152,7 @@ public class RezervasyonSayfasi extends BorderPane {
         // İşlem sütunu
         TableColumn<Reservation, String> islemKol = new TableColumn<>("İşlem");
         islemKol.setPrefWidth(160);
+        islemKol.setMinWidth(160);
         islemKol.setCellValueFactory(data ->
                 new SimpleStringProperty(data.getValue().getDurum().name()));
         islemKol.setCellFactory(col -> new TableCell<>() {
@@ -159,9 +164,20 @@ public class RezervasyonSayfasi extends BorderPane {
 
                 if (item.equals(ReservationStatus.ONAYLANDI.name())) {
                     Button tBtn = HotelApp.kirmiziBtnOlustur("Tamamla");
-                    Button iBtn = HotelApp.grisBtn("İptal");
                     tBtn.setPadding(new Insets(4, 10, 4, 10));
-                    iBtn.setPadding(new Insets(4, 10, 4, 10));
+
+                    // Diğer işlemler açılır menüde
+                    ContextMenu menu = new ContextMenu();
+                    MenuItem iptalItem   = new MenuItem("İptal Et");
+                    MenuItem duzenleItem = new MenuItem("Düzenle");
+                    MenuItem odemeItem   = new MenuItem("Ödeme Al");
+                    menu.getItems().addAll(duzenleItem, odemeItem, new SeparatorMenuItem(), iptalItem);
+
+                    Button menuBtn = HotelApp.grisBtn("⋮ Diğer");
+                    menuBtn.setPadding(new Insets(4, 10, 4, 10));
+                    menuBtn.setOnAction(e -> menu.show(menuBtn,
+                            javafx.geometry.Side.BOTTOM, 0, 0));
+
                     tBtn.setOnAction(e -> {
                         Reservation r = getTableView().getItems().get(getIndex());
                         try {
@@ -171,7 +187,7 @@ public class RezervasyonSayfasi extends BorderPane {
                             HotelApp.uyariGoster("Hata", ex.getMessage());
                         }
                     });
-                    iBtn.setOnAction(e -> {
+                    iptalItem.setOnAction(e -> {
                         Reservation r = getTableView().getItems().get(getIndex());
                         if (HotelApp.onayDiyalog("Rezervasyon iptal edilsin mi?")) {
                             try {
@@ -182,9 +198,17 @@ public class RezervasyonSayfasi extends BorderPane {
                             }
                         }
                     });
-                    setGraphic(new HBox(6, tBtn, iBtn));
+                    duzenleItem.setOnAction(e -> {
+                        Reservation r = getTableView().getItems().get(getIndex());
+                        rezervasyonDuzenleDiyalog(r);
+                    });
+                    odemeItem.setOnAction(e -> {
+                        Reservation r = getTableView().getItems().get(getIndex());
+                        odemeAlDiyalog(r);
+                    });
+                    setGraphic(new HBox(6, tBtn, menuBtn));
                 } else if (item.equals(ReservationStatus.BEKLEME_LISTESI.name())) {
-                    Button iBtn = HotelApp.grisBtn("İptal");
+                    Button iBtn = HotelApp.grisBtn("İptal Et");
                     iBtn.setPadding(new Insets(4, 10, 4, 10));
                     iBtn.setOnAction(e -> {
                         Reservation r = getTableView().getItems().get(getIndex());
@@ -198,6 +222,24 @@ public class RezervasyonSayfasi extends BorderPane {
                         }
                     });
                     setGraphic(new HBox(6, iBtn));
+                } else if (item.equals(ReservationStatus.TAMAMLANDI.name())
+                        || item.equals(ReservationStatus.IPTAL_EDILDI.name())) {
+                    Button silBtn = HotelApp.grisBtn("Sil");
+                    silBtn.setPadding(new Insets(4, 10, 4, 10));
+                    silBtn.setStyle(silBtn.getStyle()
+                            + "-fx-text-fill: #C0392B; -fx-font-weight: bold;");
+                    silBtn.setOnAction(e -> {
+                        Reservation r = getTableView().getItems().get(getIndex());
+                        if (HotelApp.onayDiyalog("Rezervasyon kalıcı olarak silinsin mi?\n" + r.getRezervasyonId())) {
+                            try {
+                                sistem.rezervasyonSil(r.getRezervasyonId());
+                                Platform.runLater(() -> { tabloVeriYukle(null); tablo.refresh(); });
+                            } catch (Exception ex) {
+                                HotelApp.uyariGoster("Hata", ex.getMessage());
+                            }
+                        }
+                    });
+                    setGraphic(new HBox(6, silBtn));
                 } else {
                     setGraphic(null);
                 }
@@ -205,7 +247,7 @@ public class RezervasyonSayfasi extends BorderPane {
         });
 
         t.getColumns().addAll(idKol, musteriKol, odaKol, girisKol, cikisKol,
-                durumKol, tutarKol, islemKol);
+                durumKol, tutarKol, odemeKol, islemKol);
         return t;
     }
 
@@ -233,6 +275,110 @@ public class RezervasyonSayfasi extends BorderPane {
         kol.setPrefWidth(genislik);
         kol.setCellValueFactory(data -> new SimpleStringProperty(deger.apply(data.getValue())));
         return kol;
+    }
+
+    private void rezervasyonDuzenleDiyalog(Reservation rez) {
+        Dialog<Void> diyalog = new Dialog<>();
+        diyalog.setTitle("Rezervasyon Düzenle — " + rez.getRezervasyonId());
+        diyalog.setHeaderText(null);
+
+        ButtonType kaydetBtn = new ButtonType("Kaydet", ButtonBar.ButtonData.OK_DONE);
+        diyalog.getDialogPane().getButtonTypes().addAll(kaydetBtn, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12); grid.setVgap(10);
+        grid.setPadding(new Insets(20));
+
+        ComboBox<String> odaCb = new ComboBox<>();
+        sistem.tumOdalar().forEach(o -> odaCb.getItems()
+                .add(o.getOdaId() + " - " + o.getTip().getGoruntulenenAd()));
+        odaCb.getItems().stream()
+                .filter(s -> s.startsWith(rez.getOdaId()))
+                .findFirst().ifPresent(odaCb::setValue);
+        odaCb.setPrefWidth(280);
+
+        DatePicker girisPicker = new DatePicker(rez.getGiris());
+        DatePicker cikisPicker = new DatePicker(rez.getCikis());
+
+        Label tutarLabel = new Label(String.format("Mevcut tutar: %.0f₺", rez.getToplamTutar()));
+        tutarLabel.setStyle("-fx-text-fill: #7F8C8D; -fx-font-size: 12px;");
+
+        grid.addRow(0, new Label("Oda:"),   odaCb);
+        grid.addRow(1, new Label("Giriş:"), girisPicker);
+        grid.addRow(2, new Label("Çıkış:"), cikisPicker);
+        grid.addRow(3, tutarLabel);
+
+        diyalog.getDialogPane().setContent(grid);
+
+        diyalog.setResultConverter(tip -> {
+            if (tip != kaydetBtn) return null;
+            String yeniOdaId = odaCb.getValue() != null ? odaCb.getValue().split(" - ")[0] : null;
+            try {
+                sistem.rezervasyonGuncelle(rez.getRezervasyonId(),
+                        girisPicker.getValue(), cikisPicker.getValue(), yeniOdaId);
+                tabloVeriYukle(null);
+                HotelApp.bilgiGoster("Başarılı", "Rezervasyon güncellendi.\nYeni tutar: "
+                        + String.format("%.0f₺", rez.getToplamTutar()));
+            } catch (Exception e) {
+                HotelApp.uyariGoster("Hata", e.getMessage());
+            }
+            return null;
+        });
+
+        diyalog.showAndWait();
+    }
+
+    private void odemeAlDiyalog(Reservation rez) {
+        double kalan = rez.getToplamTutar() - rez.getOdenenTutar();
+        if (kalan <= 0) {
+            HotelApp.bilgiGoster("Ödeme", "Bu rezervasyon için tam ödeme alınmış.");
+            return;
+        }
+
+        Dialog<Void> diyalog = new Dialog<>();
+        diyalog.setTitle("Ödeme Al — " + rez.getRezervasyonId());
+        diyalog.setHeaderText(null);
+
+        ButtonType odemeBtn = new ButtonType("Ödemeyi Kaydet", ButtonBar.ButtonData.OK_DONE);
+        diyalog.getDialogPane().getButtonTypes().addAll(odemeBtn, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12); grid.setVgap(10);
+        grid.setPadding(new Insets(20));
+
+        Label toplamLabel = new Label(String.format("Toplam tutar: %.0f₺", rez.getToplamTutar()));
+        Label odenenLabel = new Label(String.format("Ödenen:       %.0f₺", rez.getOdenenTutar()));
+        Label kalanLabel  = new Label(String.format("Kalan:        %.0f₺", kalan));
+        kalanLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #C0392B;");
+
+        TextField miktarField = new TextField(String.format("%.0f", kalan));
+        miktarField.setPromptText("Ödeme miktarı (₺)");
+
+        grid.addRow(0, toplamLabel);
+        grid.addRow(1, odenenLabel);
+        grid.addRow(2, kalanLabel);
+        grid.addRow(3, new Label("Alınan ödeme:"), miktarField);
+
+        diyalog.getDialogPane().setContent(grid);
+
+        diyalog.setResultConverter(tip -> {
+            if (tip != odemeBtn) return null;
+            try {
+                double miktar = Double.parseDouble(miktarField.getText().replace(",", ".").trim());
+                sistem.odemeKaydet(rez.getRezervasyonId(), miktar);
+                tabloVeriYukle(null);
+                HotelApp.bilgiGoster("Ödeme Kaydedildi",
+                        "Ödeme durumu: " + rez.getOdemeDurumu().getLabel()
+                        + "\nÖdenen: " + String.format("%.0f₺", rez.getOdenenTutar()));
+            } catch (NumberFormatException ex) {
+                HotelApp.uyariGoster("Hata", "Geçerli bir sayı girin");
+            } catch (Exception ex) {
+                HotelApp.uyariGoster("Hata", ex.getMessage());
+            }
+            return null;
+        });
+
+        diyalog.showAndWait();
     }
 
     private void yeniRezervasyonDiyalog() {

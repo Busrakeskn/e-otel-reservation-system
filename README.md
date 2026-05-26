@@ -20,10 +20,13 @@ Oda rezervasyonu, müsaitlik kontrolü ve müşteri yönetimi işlemlerini gerç
 
 | Özellik | Açıklama |
 |---|---|
-| Rezervasyon yönetimi | Oluşturma, iptal, tamamlama |
+| Rezervasyon yönetimi | Oluşturma, iptal, tamamlama, kalıcı silme |
+| Rezervasyon değiştirme | Onaylı rezervasyonlarda tarih ve oda güncelleme |
+| Ödeme takibi | Ön ödeme / tam ödeme kaydı, kalan bakiye görünümü |
 | Müsaitlik kontrolü | Tarih aralığı çakışma denetimi |
 | Bekleme listesi | Dolu oda için otomatik sıra |
-| Müşteri yönetimi | Kayıt, arama, listeleme |
+| Müşteri yönetimi | Kayıt, arama, listeleme, silme |
+| Format doğrulama | E-posta ve telefon formatı gerçek zamanlı kontrol |
 | Çoklu şube | Bağımsız şube ve oda yönetimi |
 | Raporlama | Gelir, doluluk oranı, şube karşılaştırması |
 | Veri kalıcılığı | JSON ile otomatik kayıt/yükleme |
@@ -146,7 +149,8 @@ e-otel/
     │   ├── Reservation.java
     │   ├── Branch.java
     │   ├── RoomType.java          ← enum
-    │   └── ReservationStatus.java ← enum
+    │   ├── ReservationStatus.java ← enum
+    │   └── OdemeDurumu.java       ← enum (Ödenmedi / Ön Ödeme / Tam Ödendi)
     ├── datastructures/            ← sıfırdan implement
     │   ├── CustomLinkedList.java
     │   ├── CustomHashMap.java

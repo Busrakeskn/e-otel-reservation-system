@@ -6,6 +6,8 @@ import com.eotel.datastructures.CustomLinkedList;
 import com.eotel.datastructures.IntervalTree;
 import com.eotel.model.*;
 
+import java.util.regex.Pattern;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class HotelSystem {
+
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern TELEFON_PATTERN =
+            Pattern.compile("^(\\+90|0)?5[0-9]{9}$");
 
     // --- Veri yapıları ---
     // Oda ve müşterilere O(1) erişim için HashMap
@@ -120,7 +127,15 @@ public class HotelSystem {
     // ==================== MÜŞTERİ ====================
 
     public Customer musteriEkle(String ad, String soyad, String email, String telefon) {
-        // aynı e-posta ile zaten kayıt var mı?
+        if (!EMAIL_PATTERN.matcher(email.trim()).matches())
+            throw new IllegalArgumentException("Geçersiz e-posta formatı (örn: ad@mail.com)");
+
+        if (telefon != null && !telefon.isBlank()) {
+            String temizTel = telefon.replaceAll("[\\s\\-()]", "");
+            if (!TELEFON_PATTERN.matcher(temizTel).matches())
+                throw new IllegalArgumentException("Geçersiz telefon numarası (örn: 05XX XXX XX XX)");
+        }
+
         for (Customer m : musteriMap.values()) {
             if (m.getEmail().equalsIgnoreCase(email))
                 throw new IllegalArgumentException("Bu e-posta zaten kayıtlı: " + email);
@@ -259,6 +274,60 @@ public class HotelSystem {
         siradakiBekleyeniOnayla(rez.getOdaId());
     }
 
+    public Reservation rezervasyonGuncelle(String rezervasyonId,
+                                            LocalDate yeniGiris, LocalDate yeniCikis,
+                                            String yeniOdaId) {
+        Reservation rez = rezervasyonMap.get(rezervasyonId);
+        if (rez == null)
+            throw new IllegalArgumentException("Rezervasyon bulunamadı: " + rezervasyonId);
+        if (rez.getDurum() != ReservationStatus.ONAYLANDI)
+            throw new IllegalStateException("Yalnızca onaylanmış rezervasyonlar değiştirilebilir");
+        if (!yeniGiris.isBefore(yeniCikis))
+            throw new IllegalArgumentException("Giriş tarihi çıkıştan önce olmalıdır");
+
+        String hedefOdaId = (yeniOdaId != null && !yeniOdaId.isBlank()) ? yeniOdaId : rez.getOdaId();
+        Room hedefOda = odaMap.get(hedefOdaId);
+        if (hedefOda == null)
+            throw new IllegalArgumentException("Oda bulunamadı: " + hedefOdaId);
+
+        // Mevcut aralığı geçici olarak kaldır
+        intervalTree.remove(rezervasyonId);
+
+        // Hedef oda ve tarihlerde çakışma kontrolü
+        if (intervalTree.cakismaVarMi(hedefOdaId, yeniGiris, yeniCikis)) {
+            // Eski aralığı geri ekle
+            intervalTree.insert(new IntervalTree.Aralik(
+                    rez.getGiris(), rez.getCikis(), rez.getOdaId(), rezervasyonId));
+            throw new IllegalStateException("Seçilen tarihler için oda müsait değil");
+        }
+
+        rez.setGiris(yeniGiris);
+        rez.setCikis(yeniCikis);
+        rez.setOdaId(hedefOdaId);
+        rez.setSubeId(hedefOda.getSubeId());
+        rez.setToplamTutar(rez.getGeceSayisi() * hedefOda.getGecelikFiyat());
+
+        intervalTree.insert(new IntervalTree.Aralik(yeniGiris, yeniCikis, hedefOdaId, rezervasyonId));
+        return rez;
+    }
+
+    public void odemeKaydet(String rezervasyonId, double miktar) {
+        Reservation rez = rezervasyonMap.get(rezervasyonId);
+        if (rez == null)
+            throw new IllegalArgumentException("Rezervasyon bulunamadı: " + rezervasyonId);
+        if (miktar <= 0)
+            throw new IllegalArgumentException("Ödeme miktarı sıfırdan büyük olmalıdır");
+
+        double yeniOdenen = rez.getOdenenTutar() + miktar;
+        if (yeniOdenen > rez.getToplamTutar() + 0.01)
+            throw new IllegalArgumentException(
+                    String.format("Kalan tutar %.0f₺, bu kadar ödeme yapılamaz", rez.getToplamTutar() - rez.getOdenenTutar()));
+
+        rez.setOdenenTutar(Math.min(yeniOdenen, rez.getToplamTutar()));
+        rez.setOdemeDurumu(rez.getOdenenTutar() >= rez.getToplamTutar()
+                ? OdemeDurumu.TAM_ODENDI : OdemeDurumu.ON_ODEME);
+    }
+
     public Reservation rezervasyonBul(String rezervasyonId) {
         return rezervasyonMap.get(rezervasyonId);
     }
@@ -277,6 +346,33 @@ public class HotelSystem {
 
     public List<Reservation> tumRezervasyonlar() {
         return rezervasyonMap.values();
+    }
+
+    public void musteriSil(String musteriId) {
+        Customer musteri = musteriMap.get(musteriId);
+        if (musteri == null)
+            throw new IllegalArgumentException("Müşteri bulunamadı: " + musteriId);
+
+        boolean aktifVarMi = rezervasyonMap.values().stream()
+                .filter(r -> r.getMusteriId().equals(musteriId))
+                .anyMatch(r -> r.getDurum() == ReservationStatus.ONAYLANDI
+                            || r.getDurum() == ReservationStatus.BEKLEME_LISTESI);
+        if (aktifVarMi)
+            throw new IllegalStateException("Aktif rezervasyonu olan müşteri silinemez. Önce rezervasyonları iptal edin.");
+
+        musteriMap.remove(musteriId);
+    }
+
+    public void rezervasyonSil(String rezervasyonId) {
+        Reservation rez = rezervasyonMap.get(rezervasyonId);
+        if (rez == null)
+            throw new IllegalArgumentException("Rezervasyon bulunamadı: " + rezervasyonId);
+
+        if (rez.getDurum() == ReservationStatus.ONAYLANDI
+                || rez.getDurum() == ReservationStatus.BEKLEME_LISTESI)
+            throw new IllegalStateException("Aktif rezervasyon silinemez. Önce iptal edin.");
+
+        rezervasyonMap.remove(rezervasyonId);
     }
 
     public List<Reservation> tamamlananRezervasyonlar() {

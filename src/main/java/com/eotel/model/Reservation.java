@@ -14,12 +14,16 @@ public class Reservation implements Comparable<Reservation> {
     private int misafirSayisi;
     private ReservationStatus durum;
     private double toplamTutar;
+    private double odenenTutar;
+    private OdemeDurumu odemeDurumu;
     private LocalDateTime olusturmaTarihi;
     private String notlar;
 
     public Reservation() {
         this.olusturmaTarihi = LocalDateTime.now();
         this.durum = ReservationStatus.BEKLEMEDE;
+        this.odenenTutar = 0;
+        this.odemeDurumu = OdemeDurumu.ODENMEDI;
     }
 
     public Reservation(String rezervasyonId, String musteriId, String odaId,
@@ -75,6 +79,12 @@ public class Reservation implements Comparable<Reservation> {
 
     public double getToplamTutar() { return toplamTutar; }
     public void setToplamTutar(double toplamTutar) { this.toplamTutar = toplamTutar; }
+
+    public double getOdenenTutar() { return odenenTutar; }
+    public void setOdenenTutar(double odenenTutar) { this.odenenTutar = odenenTutar; }
+
+    public OdemeDurumu getOdemeDurumu() { return odemeDurumu; }
+    public void setOdemeDurumu(OdemeDurumu odemeDurumu) { this.odemeDurumu = odemeDurumu; }
 
     public LocalDateTime getOlusturmaTarihi() { return olusturmaTarihi; }
     public void setOlusturmaTarihi(LocalDateTime olusturmaTarihi) { this.olusturmaTarihi = olusturmaTarihi; }
